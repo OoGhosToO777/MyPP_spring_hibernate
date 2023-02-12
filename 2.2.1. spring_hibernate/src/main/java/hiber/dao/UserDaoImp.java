@@ -6,8 +6,6 @@ import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,30 +34,33 @@ public class UserDaoImp implements UserDao {
     @Override
     @SuppressWarnings("unchecked")
     public List<User> listUsers() {
-        TypedQuery<User> query = sessionFactory.getCurrentSession().createQuery("from User");
-        return query.getResultList();
+        return sessionFactory.getCurrentSession()
+                .createQuery("from User")
+                .getResultList();
     }
 
     @Override
-    public List<User> findUserByCar(String model, int series) {
+    @Transactional
+    public List<User> findUsersByCar(String model, int series) {
         return getCars(model, series)
-                .getResultList()
                 .stream()
                 .map(this::getUserByCar)
                 .collect(Collectors.toList());
     }
 
-    private Query<Car> getCars(String model, int series) {
+    private List<Car> getCars(String model, int series) {
         return sessionFactory.getCurrentSession().createQuery(
                 "from Car where model = :model and series =:series")
                 .setParameter("model", model)
-                .setParameter("series", series);
+                .setParameter("series", series)
+                .getResultList();
     }
 
     private User getUserByCar(Car car) {
         return (User) sessionFactory.getCurrentSession()
                 .createQuery("from User where id = :id")
-                .setParameter("id", car.getId());
+                .setParameter("id", car.getId())
+                .getSingleResult();
     }
 
 }
